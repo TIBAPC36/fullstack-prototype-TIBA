@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Full-Stack App (Student Build)</title>
+ 
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="not-authenticated">
+
+
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#/">Full-Stack App (Tiba, Niv Euric B.)</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+        <ul class="navbar-nav">
+          <li class="nav-item role-logged-out"><a class="nav-link" href="#/login">Login</a></li>
+          <li class="nav-item role-logged-out"><a class="nav-link" href="#/register">Register</a></li>
+
+          <li class="nav-item dropdown role-logged-in">
+  <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" id="userDropdown">
+   
+  <span id="navbarUserName">Admin</span>
+  </a>
+
+  
+
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><a class="dropdown-item" href="#/profile">Profile</a></li>
+    <li><a class="dropdown-item role-admin" href="#/employees">Employees</a></li>
+    <li><a class="dropdown-item role-admin" href="#/accounts">Accounts</a></li>
+    <li><a class="dropdown-item role-admin" href="#/departments">Departments</a></li>
+    <li><a class="dropdown-item" href="#/requests">My Requests</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><a class="dropdown-item text-danger" href="#" id="logoutBtn">Logout</a></li>
+  </ul>
+</li>
+
+
+         
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container mt-4">
+
+   
+    <section id="home-page" class="page active">
+      <h2>Welcome to the Full-Stack App</h2>
+      <p>Use the navigation to register or login.</p>
+    </section>
+
+    <section id="register-page" class="page">
+      <h2>Register</h2>
+      <form id="registerForm">
+        <div class="mb-2"><input class="form-control" type="text" placeholder="First Name" required id="regFirst"></div>
+        <div class="mb-2"><input class="form-control" type="text" placeholder="Last Name" required id="regLast"></div>
+        <div class="mb-2"><input class="form-control" type="email" placeholder="Email" required id="regEmail"></div>
+        <div class="mb-2"><input class="form-control" type="password" placeholder="Password (min 6)" required id="regPassword"></div>
+        <button class="btn btn-primary" type="submit">Register</button>
+      </form>
+    </section>
+
+    <section id="verify-email-page" class="page">
+      <h2>Email Verification</h2>
+      <p id="verifyMsg"></p>
+      <button class="btn btn-success" id="simulateVerifyBtn">✅ Simulate Email Verification</button>
+    </section>
+
+    <section id="login-page" class="page">
+      <h2>Login</h2>
+      <form id="loginForm">
+        <div class="mb-2"><input class="form-control" type="email" placeholder="Email" required id="loginEmail"></div>
+        <div class="mb-2"><input class="form-control" type="password" placeholder="Password" required id="loginPassword"></div>
+        <button class="btn btn-primary" type="submit">Login</button>
+      </form>
+      <div id="loginError" class="text-danger mt-2"></div>
+    </section>
+
+    <section id="profile-page" class="page">
+      <h2>Profile</h2>
+      <div id="profileContent"></div>
+    </section>
+
+    <section id="accounts-page" class="page">
+      <h2>Accounts</h2>
+      <button class="btn btn-sm btn-success mb-2" id="addAccountBtn">+ Add Account</button>
+      <table class="table table-bordered table-sm">
+        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Verified</th><th>Actions</th></tr></thead>
+        <tbody id="accountsTable"></tbody>
+      </table>
+    </section>
+
+    <section id="departments-page" class="page">
+      <h2>Departments</h2>
+      <button class="btn btn-sm btn-success mb-2" onclick="alert('Add Department Not Implemented')">+ Add Department</button>
+      <table class="table table-bordered table-sm">
+        <thead><tr><th>Name</th><th>Description</th></tr></thead>
+        <tbody id="departmentsTable"></tbody>
+      </table>
+    </section>
+
+    <section id="employees-page" class="page">
+      <h2>Employees</h2>
+      <button class="btn btn-sm btn-success mb-2" id="addEmployeeBtn">+ Add Employee</button>
+      <table class="table table-bordered table-sm">
+        <thead><tr><th>ID</th><th>User</th><th>Position</th><th>Dept</th></tr></thead>
+        <tbody id="employeesTable"></tbody>
+      </table>
+    </section>
+
+    <section id="requests-page" class="page">
+      <h2>My Requests</h2>
+      <button class="btn btn-sm btn-success mb-2" id="newRequestBtn">+ New Request</button>
+      <table class="table table-bordered table-sm">
+        <thead><tr><th>Date</th><th>Type</th><th>Items</th><th>Status</th></tr></thead>
+        <tbody id="requestsTable"></tbody>
+      </table>
+    </section>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  
+  
+  <script>
+   
+    let currentUser = null;
+    const STORAGE_KEY = 'ipt_demo_v1';
+    window.db = { accounts: [], departments: [], employees: [], requests: [] };
+
+    function loadFromStorage() {
+      try {
+        const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (data) window.db = data;
+        else seedData();
+      } catch {
+        seedData();
+      }
+    }
+
+    function saveToStorage() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(window.db));
+    }
+
+    function seedData() {
+      window.db.accounts = [{firstName:'Admin', lastName:'User', email:'admin@example.com', password:'Password123!', role:'admin', verified:true}];
+      window.db.departments = [{name:'Engineering', description:'Engineering Dept'}, {name:'HR', description:'Human Resources'}];
+      window.db.employees = [];
+      window.db.requests = [];
+      saveToStorage();
+    }
+
+    function navigateTo(hash) {
+      window.location.hash = hash;
+    }
+
+    function handleRouting() {
+      const hash = window.location.hash || '#/';
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      const auth = !!currentUser;
+      const isAdmin = auth && currentUser.role==='admin';
+
+      document.body.className = auth ? 'authenticated':'not-authenticated';
+      if(isAdmin) document.body.classList.add('is-admin');
+
+      let pageId = '';
+      switch(hash) {
+        case '#/': pageId='home-page'; break;
+        case '#/register': pageId='register-page'; break;
+        case '#/verify-email': pageId='verify-email-page'; break;
+        case '#/login': pageId='login-page'; break;
+        case '#/profile': pageId='profile-page'; if(!auth){navigateTo('#/login'); return;} renderProfile(); break;
+        case '#/accounts': pageId='accounts-page'; if(!isAdmin){navigateTo('#/'); return;} renderAccountsList(); break;
+        case '#/departments': pageId='departments-page'; if(!isAdmin){navigateTo('#/'); return;} renderDepartmentsList(); break;
+        case '#/employees': pageId='employees-page'; if(!isAdmin){navigateTo('#/'); return;} renderEmployeesTable(); break;
+        case '#/requests': pageId='requests-page'; if(!auth){navigateTo('#/login'); return;} renderRequestsTable(); break;
+        default: pageId='home-page';
+      }
+      document.getElementById(pageId).classList.add('active');
+    }
+
+    window.addEventListener('hashchange', handleRouting);
+
+    
+    function setAuthState(isAuth, user=null){
+      currentUser = user;
+      if(isAuth){
+        document.body.classList.add('authenticated');
+        document.body.classList.remove('not-authenticated');
+        if(user.role==='admin') document.body.classList.add('is-admin');
+      } else {
+        document.body.classList.remove('authenticated','is-admin');
+        document.body.classList.add('not-authenticated');
+      }
+      handleRouting();
+    }
+
+    function checkAuthOnLoad() {
+      const token = localStorage.getItem('auth_token');
+      if(token){
+        const user = window.db.accounts.find(a=>a.email===token);
+        if(user) setAuthState(true,user);
+      }
+    }
+
+    
+    document.getElementById('registerForm').addEventListener('submit', e=>{
+      e.preventDefault();
+      const f=document.getElementById('regFirst').value.trim();
+      const l=document.getElementById('regLast').value.trim();
+      const email=document.getElementById('regEmail').value.trim();
+      const pass=document.getElementById('regPassword').value;
+      if(pass.length<6){alert('Password min 6 chars'); return;}
+      if(window.db.accounts.some(a=>a.email===email)){alert('Email exists'); return;}
+      window.db.accounts.push({firstName:f,lastName:l,email,password:pass,role:'user',verified:false});
+      saveToStorage();
+      localStorage.setItem('unverified_email',email);
+      navigateTo('#/verify-email');
+    });
+
+   
+    document.getElementById('simulateVerifyBtn').addEventListener('click', ()=>{
+      const email = localStorage.getItem('unverified_email');
+      if(!email) return;
+      const acc = window.db.accounts.find(a=>a.email===email);
+      if(acc){ acc.verified=true; saveToStorage(); localStorage.removeItem('unverified_email'); alert('Verified!'); navigateTo('#/login'); }
+    });
+
+   
+    document.getElementById('loginForm').addEventListener('submit', e=>{
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value.trim();
+      const pass = document.getElementById('loginPassword').value;
+      const user = window.db.accounts.find(a=>a.email===email && a.password===pass && a.verified);
+      if(user){
+        localStorage.setItem('auth_token', user.email);
+        setAuthState(true,user);
+        navigateTo('#/profile');
+      } else {
+        document.getElementById('loginError').innerText='Invalid credentials or not verified.';
+      }
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', ()=>{
+      localStorage.removeItem('auth_token');
+      setAuthState(false);
+      navigateTo('#/');
+    });
+
+   
+    function renderProfile(){
+      if(!currentUser) return;
+      const c = currentUser;
+      document.getElementById('profileContent').innerHTML = `
+        <p><strong>Name:</strong> ${c.firstName} ${c.lastName}</p>
+        <p><strong>Email:</strong> ${c.email}</p>
+        <p><strong>Role:</strong> ${c.role}</p>
+        <button class="btn btn-sm btn-primary" onclick="alert('Edit Profile Not Implemented')">Edit Profile</button>
+      `;
+    }
+
+    
+    function renderAccountsList(){
+      const tbody = document.getElementById('accountsTable');
+      tbody.innerHTML='';
+      window.db.accounts.forEach(acc=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML=`
+          <td>${acc.firstName} ${acc.lastName}</td>
+          <td>${acc.email}</td>
+          <td>${acc.role}</td>
+          <td>${acc.verified?'✔️':'❌'}</td>
+          <td>
+            <button class="btn btn-sm btn-info" onclick="alert('Edit not implemented')">Edit</button>
+            <button class="btn btn-sm btn-warning" onclick="resetPW('${acc.email}')">Reset PW</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteAccount('${acc.email}')">Delete</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function resetPW(email){
+      const acc = window.db.accounts.find(a=>a.email===email);
+      if(!acc) return;
+      const npw = prompt('Enter new password (min 6 chars):');
+      if(npw && npw.length>=6){ acc.password=npw; saveToStorage(); alert('Password reset!'); }
+      else alert('Invalid password');
+    }
+
+    function deleteAccount(email){
+      if(currentUser.email===email){ alert("Can't delete self"); return; }
+      if(confirm('Delete this account?')){ window.db.accounts = window.db.accounts.filter(a=>a.email!==email); saveToStorage(); renderAccountsList(); }
+    }
+
+    function renderDepartmentsList(){
+      const tbody = document.getElementById('departmentsTable');
+      tbody.innerHTML='';
+      window.db.departments.forEach(d=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML=`<td>${d.name}</td><td>${d.description||''}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderEmployeesTable(){
+      const tbody = document.getElementById('employeesTable');
+      tbody.innerHTML='';
+      window.db.employees.forEach(emp=>{
+        const user = window.db.accounts.find(a=>a.email===emp.userEmail);
+        const dept = window.db.departments.find(d=>d.name===emp.department);
+        const tr = document.createElement('tr');
+        tr.innerHTML=`<td>${emp.id}</td><td>${user?user.email:''}</td><td>${emp.position}</td><td>${dept?dept.name:''}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    
+    function renderRequestsTable(){
+      const tbody = document.getElementById('requestsTable');
+      tbody.innerHTML='';
+      window.db.requests.filter(r=>r.employeeEmail===currentUser.email).forEach(r=>{
+        const items = r.items.map(i=>`${i.name} x${i.qty}`).join(', ');
+        const badge = r.status==='pending'?'warning':r.status==='approved'?'success':'danger';
+        const tr = document.createElement('tr');
+        tr.innerHTML=`<td>${r.date}</td><td>${r.type}</td><td>${items}</td><td><span class="badge bg-${badge} badge-status">${r.status}</span></td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById('newRequestBtn').addEventListener('click', ()=>{
+      const type = prompt('Request Type (Equipment, Leave, Resources):');
+      if(!type) return;
+      const items = [];
+      while(true){
+        const name = prompt('Item name (Cancel to stop):');
+        if(!name) break;
+        const qty = prompt('Quantity:');
+        if(!qty) break;
+        items.push({name, qty});
+      }
+      if(items.length===0){ alert('No items'); return; }
+      window.db.requests.push({type, items, status:'pending', date:new Date().toLocaleDateString(), employeeEmail:currentUser.email});
+      saveToStorage();
+      renderRequestsTable();
+    });
+
+  
+    loadFromStorage();
+    checkAuthOnLoad();
+    handleRouting();
+  </script>
+</body>
+</html>
