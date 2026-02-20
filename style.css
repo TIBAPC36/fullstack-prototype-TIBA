@@ -1,0 +1,29 @@
+/* Hide all pages by default */
+.page {
+  display: none;
+}
+
+/* Show the active page */
+.page.active {
+  display: block;
+}
+
+/* When NOT logged in → hide logged-in elements */
+body.not-authenticated .role-logged-in {
+  display: none;
+}
+
+/* When logged in → hide logged-out elements */
+body.authenticated .role-logged-out {
+  display: none;
+}
+
+/* Hide admin-only elements by default */
+.role-admin {
+  display: none;
+}
+
+/* Show admin elements only if body has is-admin */
+body.is-admin .role-admin {
+  display: block;
+}
